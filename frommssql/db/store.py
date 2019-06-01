@@ -20,6 +20,26 @@ class StoreDao(mysql_base.MysqlBase):
 
         return javs
 
+    def get_where(self, where, params):
+
+        sql = self.__get_sql_select()
+        sql = sql + where
+
+        if params is None:
+            self.cursor.execute(sql)
+        else:
+            self.cursor.execute(sql, params)
+
+        # rowcountは戻りがあっても、正しい件数を取得出来ない
+        # rowcount = self.cursor.rowcount
+        rs = self.cursor.fetchall()
+
+        stores = self.__get_list(rs)
+
+        self.conn.commit()
+
+        return stores
+
     def get_where_agreement(self, where):
 
         sql = self.__get_sql_select()
@@ -62,4 +82,19 @@ class StoreDao(mysql_base.MysqlBase):
             stores.append(store)
 
         return stores
+
+    def export(self, data: data.StoreData = None):
+
+        sql = 'INSERT INTO store (label ' \
+              ', name1, name2, path, remark ' \
+              ', created_at, updated_at) ' \
+              ' VALUES(%s ' \
+              ', %s, %s, %s, %s ' \
+              ', %s, %s)'
+
+        self.cursor.execute(sql, (data.label
+                                        , data.name1, data.name2, data.path, data.remark
+                                        , data.createdAt, data.updatedAt))
+
+        self.conn.commit()
 

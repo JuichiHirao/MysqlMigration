@@ -2,6 +2,7 @@ class StoreData:
 
     def __init__(self):
 
+        self.id = 0
         self.label = ''
         self.name1 = ''
         self.name2 = ''
@@ -11,6 +12,24 @@ class StoreData:
         self.updatedAt = None
 
     def print(self):
+        print('label [' + self.label + ']')
+
+
+class FavData:
+
+    def __init__(self):
+
+        self.id = 0
+        self.label = ''
+        self.name = ''
+        self.type = ''
+        self.comment = ''
+        self.remark = ''
+        self.createdAt = None
+        self.updatedAt = None
+
+    def print(self):
+
         print('label [' + self.label + ']')
 
 

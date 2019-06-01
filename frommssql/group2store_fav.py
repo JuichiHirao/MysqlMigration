@@ -1,10 +1,15 @@
 # -*- coding: utf-8 -*-
 from frommssql import mig_base
+from frommssql import data
+from frommssql import db
 
 
 class Group2StoreOrFav(mig_base.MigrationFromMssqlBase):
 
     def execute(self):
+
+        self.fav_dao = db.fav.FavDao()
+        self.store_dao = db.store.StoreDao()
 
         self.mssql_cursor.execute('SELECT COUNT(*) FROM MOVIE_GROUP;')
 
@@ -23,27 +28,38 @@ class Group2StoreOrFav(mig_base.MigrationFromMssqlBase):
             id = row[0]
             name = row[1]
             label = row[2]
-            print(label)
+            # print(label)
             explanation = row[3]
-            print(explanation)
+            # print(explanation)
             kind = row[4]
             created_at = row[5]
             updated_at = row[6]
 
             row = self.mssql_cursor.fetchone()
 
+            if kind == 1 or kind == 3:
+                if kind == 3:
+                    name = label + ' ' + name
+
+                stores = self.store_dao.get_where('WHERE label = %s', (name, ))
+
+                if stores is not None and len(stores) >= 1:
+                    print('exist store [' + name + ']')
+                    continue
+
             # kind 1 store name1 DVDRIP-XX
             if kind == 1:
-                store_label = name
-                sql = 'INSERT INTO store(label ' \
-                      ', name1, name2, path, remark ' \
-                      ', created_at, updated_at) ' \
-                      ' VALUES(%s ' \
-                      ', %s, %s, %s, %s ' \
-                      ', %s, %s)'
 
-                self.mysql_cursor.execute(sql, (store_label, name, '', explanation, ''
-                                          , created_at, updated_at))
+                store = data.StoreData()
+
+                store.label = name
+                store.name1 = name
+                store.name2 = ''
+                store.path = explanation
+                store.remark = ''
+                store.createdAt = created_at
+                store.updatedAt = updated_at
+
                 cnt_store = cnt_store + 1
 
             # kind 3 store name1 = m_group.label mywife, HimeMix
@@ -52,20 +68,21 @@ class Group2StoreOrFav(mig_base.MigrationFromMssqlBase):
             #   name1 : site_name mywife m_group.label = site_name, m_group.name = parent_path とマッチ
             #   name2 : parent_path 041-080 m_group.label = site_name, m_group.name = parent_path とマッチ
             if kind == 3:
-                store_label = label + ' ' + name
-                sql = 'INSERT INTO store(label ' \
-                      ', name1, name2, path, remark ' \
-                      ', created_at, updated_at) ' \
-                      ' VALUES(%s ' \
-                      ', %s, %s, %s, %s ' \
-                      ', %s, %s)'
+                store = data.StoreData()
 
-                self.mysql_cursor.execute(sql, (store_label, label, name, explanation, ''
-                                                , created_at, updated_at))
+                store.label = label + ' ' + name
+                store.name1 = label
+                store.name2 = name
+                store.path = explanation
+                store.remark = ''
+                store.createdAt = created_at
+                store.updatedAt = updated_at
+
+                self.store_dao.export(store)
+
                 cnt_store = cnt_store + 1
 
             if kind == 4:
-                print('name [' + str(name) + ']')
                 arr_name = '／'.split(name)
                 if arr_name is not None and len(arr_name) > 1:
                     name = ','.join(arr_name)
@@ -73,24 +90,27 @@ class Group2StoreOrFav(mig_base.MigrationFromMssqlBase):
                 else:
                     fav_label = name
 
+                favs = self.fav_dao.get_where('WHERE label = %s', (fav_label, ))
+
+                if favs is not None and len(favs) >= 1:
+                    print('exist fav [' + name + ']')
+                    continue
+
+                fav = data.FavData()
+
+                fav.name = fav_label
+                fav.type = 'actress'
+                fav.createdAt = created_at
+                fav.updatedAt = updated_at
+
                 if len(label.strip()) > 0:
-                    fav_comment = explanation + ' comment : ' + label
+                    fav.comment = explanation + ' comment : ' + label
                 else:
-                    fav_comment = explanation.strip()
+                    fav.comment = explanation.strip()
 
-                sql = 'INSERT INTO fav(label ' \
-                      ', name, fav_type, comment, remark ' \
-                      ', created_at, updated_at) ' \
-                      ' VALUES(%s ' \
-                      ', %s, %s, %s, %s ' \
-                      ', %s, %s)'
-
-                self.mysql_cursor.execute(sql, (fav_label, name, 1, fav_comment, ''
-                                                , created_at, updated_at))
+                self.fav_dao.export(fav)
 
                 cnt_fav = cnt_fav + 1
-
-            self.mysql_conn.commit()
 
             idx = idx + 1
 
