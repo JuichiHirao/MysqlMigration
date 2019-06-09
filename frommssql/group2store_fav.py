@@ -38,10 +38,7 @@ class Group2StoreOrFav(mig_base.MigrationFromMssqlBase):
             row = self.mssql_cursor.fetchone()
 
             if kind == 1 or kind == 3:
-                if kind == 3:
-                    name = label + ' ' + name
-
-                stores = self.store_dao.get_where('WHERE label = %s', (name, ))
+                stores = self.store_dao.get_where('WHERE label = %s', (label + ' ' + name, ))
 
                 if stores is not None and len(stores) >= 1:
                     print('exist store [' + name + ']')
@@ -60,6 +57,7 @@ class Group2StoreOrFav(mig_base.MigrationFromMssqlBase):
                 store.createdAt = created_at
                 store.updatedAt = updated_at
 
+                self.store_dao.export(store)
                 cnt_store = cnt_store + 1
 
             # kind 3 store name1 = m_group.label mywife, HimeMix
@@ -79,7 +77,6 @@ class Group2StoreOrFav(mig_base.MigrationFromMssqlBase):
                 store.updatedAt = updated_at
 
                 self.store_dao.export(store)
-
                 cnt_store = cnt_store + 1
 
             if kind == 4:

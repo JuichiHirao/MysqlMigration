@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import os
+import re
 from frommssql import mig_base
 from frommssql import db
 
@@ -43,13 +44,15 @@ class MigrationContentsTables(mig_base.MigrationFromMssqlBase):
         self.mssql_conn.commit()
 
         for label in label_list:
+            # print(label.upper())
             store_filter = filter(lambda store: store.path.upper() == label.upper(), self.stores)
+            # print('AFTER' + label.upper())
             store_list = list(store_filter)
 
             if len(store_list) < 1:
                 print('storeにlabel[' + label + ']がない ' + str(len(store_list)) + '件' )
                 # print('store_list [' + str(store_list[0]) + '件' )
-                exit(-1)
+                # exit(-1)
 
     def execute_files(self):
 
@@ -71,7 +74,7 @@ class MigrationContentsTables(mig_base.MigrationFromMssqlBase):
             store_list = list(store_filter)
 
             if len(store_list) < 1:
-                print('storeにlabel[' + label + ']がない ' + str(len(store_list)) + '件' )
+                print('storeにlabel[' + label + ']がない ' + str(len(store_list)) + '件 ID[' + str(row[0]) + ']')
                 store_label = ''
                 # exit(-1)
             elif len(store_list) >= 1:
@@ -97,7 +100,7 @@ class MigrationContentsTables(mig_base.MigrationFromMssqlBase):
             sql = 'INSERT INTO contents (store_label ' \
                   '  , name, product_number, extension, tag ' \
                   '  , publish_date, file_date, file_count, size ' \
-                  '  , rating, comment, remark, is_not_exist ' \
+                  '  , rating, comment, remark, file_status ' \
                   '  , created_at, updated_at) ' \
                   ' VALUES(%s ' \
                   ', %s, %s, %s, %s ' \
@@ -108,7 +111,7 @@ class MigrationContentsTables(mig_base.MigrationFromMssqlBase):
             self.mysql_cursor.execute(sql, (store_label
                                             , name, p_number, extension, tag
                                             , sell_date, file_date, 0, size
-                                            , rating, comment, remark, 0
+                                            , rating, comment, remark, 'exist'
                                             , created_at, updated_at))
 
             self.mysql_conn.commit()
@@ -148,15 +151,41 @@ class MigrationContentsTables(mig_base.MigrationFromMssqlBase):
             # if idx > 100:
             #     break
             store_label = row[4] + ' ' + row[8]
+
+            if row[4] == 'Tokyo247':
+                if 'COLLECTION' in row[1]:
+                    store_label = row[4] + ' COLLECTION'
+                elif 'Maxi-247' in row[1]:
+                    store_label = row[4] + ' Max247'
+                else:
+                    store_label = row[4] + ' \\\\TWELVE-SRV\ContentsSeries3\TOKYO247'
+
+            if store_label == 'RealShodo ':
+                store_label = row[4] + ' \\\\twelve-srv\ContentsSeries\RealShodo'
+
+            if store_label == '人妻パラダイス ':
+                store_label = row[4] + ' \\\\twelve-srv\ContentsSeries3\人妻パラダイス'
+            elif re.search('人妻パラダイス [0-2].*', store_label):
+                store_label = row[4] + ' _MAIN\\' + row[8]
+
+            if store_label == 'WOMAN INSIDE ':
+                store_label = row[4] + ' \\\\twelve-srv\ContentsSeries2\WOMAN INSIDE'
+
+            if store_label == 'S-CUTE ':
+                file_status = 'site not exist'
+            else:
+                file_status = 'exist'
+
             store_filter = filter(lambda store: store.label.upper() == store_label.upper(), self.stores)
             store_list = list(store_filter)
 
+
             if len(store_list) >= 1:
-                print('storeにlabel[' + store_label + ']がない ' + str(len(store_list)) + '件' )
                 store_label = store_list[0].label
             else:
-                # exit(-1)
+                print('storeにlabel[' + store_label + ']がない ' + str(len(store_list)) + '件 ID [' + str(row[0]) + '] ' + row[1] + ' ' + file_status)
                 store_label = ''
+                # exit(-1)
 
             name = row[1]
             movie_newdate = row[2]  # file_date
@@ -172,16 +201,16 @@ class MigrationContentsTables(mig_base.MigrationFromMssqlBase):
 
             sql = 'INSERT INTO contents (store_label ' \
                   '  , name, extension, tag, file_date ' \
-                  '  , rating, comment, remark ' \
+                  '  , rating, comment, remark, file_status ' \
                   '  , created_at, updated_at) ' \
                   ' VALUES(%s ' \
                   ', %s, %s, %s, %s ' \
-                  ', %s, %s, %s ' \
+                  ', %s, %s, %s, %s ' \
                   ', %s, %s)'
 
             self.mysql_cursor.execute(sql, (store_label
                                             , name, extension, tag, movie_newdate
-                                            , rating, comment, remark
+                                            , rating, comment, remark, file_status
                                             , created_at, updated_at))
 
             self.mysql_conn.commit()
@@ -192,7 +221,7 @@ class MigrationContentsTables(mig_base.MigrationFromMssqlBase):
 
     def execute_contents(self):
 
-        '''
+        """
         853
         ACTRESS_NAME    楓姫輝／白石里佳
                         小泉ありさ／新庄小雪
@@ -209,7 +238,8 @@ class MigrationContentsTables(mig_base.MigrationFromMssqlBase):
 
         INSERT INTO MOVIE_CONTENTS (ID, ACTRESS_NAME, SITE_NAME, LINK_PATH, CONTENTS_DATE)
           VALUES (21, '＠YOU', 'S-CUTE', 'ps4_93_you2', '2009-11-21');
-        '''
+        """
+
         self.mssql_cursor.execute('SELECT ID ' \
                                   '  , ACTRESS_NAME, SITE_NAME, LINK_PATH, CONTENTS_DATE ' \
                                   'FROM MOVIE_CONTENTS ')
@@ -230,10 +260,10 @@ class MigrationContentsTables(mig_base.MigrationFromMssqlBase):
             link_path = row[3]
             contents_date = row[4]
 
-            is_not_exist = 0
+            file_status = 'exist'
             if 'NoFile' in link_path:
-                is_not_exist = 2
-                print('is not exist [' + link_path + ']')
+                file_status = 'no file'
+                print('file_status is not exist [' + link_path + ']')
             else:
                 arr_link_path = os.path.splitext(link_path)
                 link_path_name = arr_link_path[0]
@@ -246,8 +276,10 @@ class MigrationContentsTables(mig_base.MigrationFromMssqlBase):
 
                 if contents_list is None:
                     print('nothing data [' + actress_name + ']   ' + link_path_name)
-                # 存在しない場合は、is_not_existを9にして、登録
+                    # 存在しない場合は、file_statusを'nothing data'にして、登録
+                    file_status = 'nothing data'
                 else:
+                    file_status = 'exist'
                     if len(contents_list) > 1:
                         match_extension = list(filter(lambda one_contents: one_contents.extension.upper() == extension.upper(), contents_list))
                         if match_extension is not None and len(match_extension) == 1:
@@ -280,11 +312,11 @@ class MigrationContentsTables(mig_base.MigrationFromMssqlBase):
 
             row = self.mssql_cursor.fetchone()
 
-            '''
+            """
             sql = 'INSERT INTO contents (store_label ' \
                   '  , name, product_number, extension, tag ' \
                   '  , publish_date, file_date, file_count, size ' \
-                  '  , rating, comment, remark, is_not_exist ' \
+                  '  , rating, comment, remark, file_status ' \
                   '  , created_at, updated_at) ' \
                   ' VALUES(%s ' \
                   ', %s, %s, %s, %s ' \
@@ -299,12 +331,12 @@ class MigrationContentsTables(mig_base.MigrationFromMssqlBase):
                                             , created_at, updated_at))
 
             self.mysql_conn.commit()
-            '''
+            """
 
             idx = idx + 1
 
         print('export ' + str(idx) + '件')
-        print('  OK ' + str(row_ok) + '件')
+        print('  OK ' + str(row_ok) + '件 既にtag設定済み')
         print('  update ' + str(row_update) + '件')
         print('  nazo ' + str(row_nazo) + '件')
 

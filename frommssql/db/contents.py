@@ -44,7 +44,7 @@ class ContentsDao(mysql_base.MysqlBase):
               '  , store_label, name, product_number, extension ' \
               '  , tag, publish_date, file_date, file_count ' \
               '  , size, rating, comment, remark' \
-              '  , is_not_exist ' \
+              '  , file_status ' \
               '  , created_at, updated_at ' \
               '  FROM contents '
 
