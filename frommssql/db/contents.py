@@ -80,3 +80,38 @@ class ContentsDao(mysql_base.MysqlBase):
             contents_list.append(contents)
 
         return contents_list
+
+    def update_tag(self, register_data: data.ContentsData = None):
+
+        sql = 'UPDATE contents ' \
+              '  SET tag = %s ' \
+              ' WHERE id = %s '
+
+        self.cursor.execute(sql, (register_data.tag, register_data.id))
+
+        self.conn.commit()
+
+    def export(self, register_data: data.ContentsData = None):
+
+        sql = 'INSERT INTO contents( ' \
+              '  store_label, name, product_number, extension ' \
+              '  , tag, publish_date, file_date, file_count ' \
+              '  , size, rating, comment, remark ' \
+              '  , file_status ' \
+              '  , created_at, updated_at) ' \
+              ' VALUES(%s, %s, %s, %s ' \
+              ', %s, %s, %s, %s ' \
+              ', %s, %s, %s, %s ' \
+              ', %s ' \
+              ', %s, %s)'
+
+        self.cursor.execute(sql, (register_data.storeLabel
+                                  , register_data.name, register_data.productNumber, register_data.extension
+                                  , register_data.tag, register_data.publishDate, register_data.fileDate
+                                  , register_data.fileCount
+                                  , register_data.size
+                                  , register_data.rating, register_data.comment, register_data.remark
+                                  , register_data.fileStatus
+                                  , register_data.createdAt, register_data.updatedAt))
+
+        self.conn.commit()

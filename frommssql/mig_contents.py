@@ -3,6 +3,7 @@ import os
 import re
 from frommssql import mig_base
 from frommssql import db
+from frommssql import data
 
 
 class MigrationContentsTables(mig_base.MigrationFromMssqlBase):
@@ -56,10 +57,10 @@ class MigrationContentsTables(mig_base.MigrationFromMssqlBase):
 
     def execute_files(self):
 
-        self.mssql_cursor.execute('SELECT ID ' \
-                                  ', NAME, SIZE, FILE_DATE, RATING ' \
-                                  ', LABEL, SELL_DATE, COMMENT, REMARK ' \
-                                  ', PRODUCT_NUMBER, FILE_COUNT, EXTENSION, TAG ' \
+        self.mssql_cursor.execute('SELECT ID '
+                                  ', NAME, SIZE, FILE_DATE, RATING '
+                                  ', LABEL, SELL_DATE, COMMENT, REMARK '
+                                  ', PRODUCT_NUMBER, FILE_COUNT, EXTENSION, TAG '
                                   ', CREATE_DATE, UPDATE_DATE FROM MOVIE_FILES')
 
         row = self.mssql_cursor.fetchone()
@@ -80,41 +81,27 @@ class MigrationContentsTables(mig_base.MigrationFromMssqlBase):
             elif len(store_list) >= 1:
                 store_label = store_list[0].label
 
-            name = row[1].encode('utf-8')
-            size = row[2]
-            file_date = row[3]
-            rating = self.get_column_int(row[4])
-            label = row[5]
-            sell_date = row[6]
-            comment = self.get_column_encode(row[7])
-            remark = self.get_column_encode(row[8])
-            p_number = self.get_column_encode(row[9])
-            # file_count = row[10]
-            extension = row[11]
-            tag = self.get_column_encode(row[12])
-            created_at = row[13]
-            updated_at = row[14]
+            register_data = data.ContentsData()
+            register_data.storeLabel = store_label
+            register_data.name = row[1].encode('utf-8')
+            register_data.size = row[2]
+            register_data.fileDate = row[3]
+            register_data.rating = self.get_column_int(row[4])
+            register_data.label = row[5]
+            register_data.publishDate = row[6]
+            register_data.comment = self.get_column_encode(row[7])
+            register_data.remark = self.get_column_encode(row[8])
+            register_data.productNumber = self.get_column_encode(row[9])
+            register_data.fileCount = row[10]
+            register_data.extension = row[11]
+            register_data.tag = self.get_column_encode(row[12])
+            register_data.fileStatus = 'exist'
+            register_data.createdAt = row[13]
+            register_data.updatedAt = row[14]
 
             row = self.mssql_cursor.fetchone()
 
-            sql = 'INSERT INTO contents (store_label ' \
-                  '  , name, product_number, extension, tag ' \
-                  '  , publish_date, file_date, file_count, size ' \
-                  '  , rating, comment, remark, file_status ' \
-                  '  , created_at, updated_at) ' \
-                  ' VALUES(%s ' \
-                  ', %s, %s, %s, %s ' \
-                  ', %s, %s, %s, %s ' \
-                  ', %s, %s, %s, %s ' \
-                  ', %s, %s)'
-
-            self.mysql_cursor.execute(sql, (store_label
-                                            , name, p_number, extension, tag
-                                            , sell_date, file_date, 0, size
-                                            , rating, comment, remark, 'exist'
-                                            , created_at, updated_at))
-
-            self.mysql_conn.commit()
+            self.contents_dao.export(register_data)
 
             idx = idx + 1
 
@@ -179,7 +166,6 @@ class MigrationContentsTables(mig_base.MigrationFromMssqlBase):
             store_filter = filter(lambda store: store.label.upper() == store_label.upper(), self.stores)
             store_list = list(store_filter)
 
-
             if len(store_list) >= 1:
                 store_label = store_list[0].label
             else:
@@ -187,33 +173,22 @@ class MigrationContentsTables(mig_base.MigrationFromMssqlBase):
                 store_label = ''
                 # exit(-1)
 
-            name = row[1]
-            movie_newdate = row[2]  # file_date
-            rating = self.get_column_int(row[3])
-            comment = self.get_column_encode(row[6])
-            remark = ''
-            extension = row[11]
-            tag = self.get_column_encode(row[12])
-            created_at = row[13]
-            updated_at = row[14]
+            register_data = data.ContentsData()
+            register_data.storeLabel = store_label
+            register_data.name = row[1]
+            # movie_newdate = row[2]  # file_date
+            register_data.fileDate = row[2]
+            register_data.rating = self.get_column_int(row[3])
+            register_data.comment = self.get_column_encode(row[6])
+            register_data.remark = ''
+            register_data.extension = row[11]
+            register_data.tag = self.get_column_encode(row[12])
+            register_data.createdAt = row[13]
+            register_data.updatedAt = row[14]
 
             row = self.mssql_cursor.fetchone()
 
-            sql = 'INSERT INTO contents (store_label ' \
-                  '  , name, extension, tag, file_date ' \
-                  '  , rating, comment, remark, file_status ' \
-                  '  , created_at, updated_at) ' \
-                  ' VALUES(%s ' \
-                  ', %s, %s, %s, %s ' \
-                  ', %s, %s, %s, %s ' \
-                  ', %s, %s)'
-
-            self.mysql_cursor.execute(sql, (store_label
-                                            , name, extension, tag, movie_newdate
-                                            , rating, comment, remark, file_status
-                                            , created_at, updated_at))
-
-            self.mysql_conn.commit()
+            self.contents_dao.export(register_data)
 
             idx = idx + 1
 
@@ -254,34 +229,42 @@ class MigrationContentsTables(mig_base.MigrationFromMssqlBase):
             # if idx > 40:
             #     break
 
-            id = row[0]
+            register_data = data.ContentsData()
+            # register_data.id = row[0]
             actress_name = row[1]
             site_name = row[2]
             link_path = row[3]
             contents_date = row[4]
 
-            file_status = 'exist'
+            register_data.fileStatus = 'exist'
             if 'NoFile' in link_path:
-                file_status = 'no file'
+                register_data.fileStatus = 'no file'
                 print('file_status is not exist [' + link_path + ']')
             else:
                 arr_link_path = os.path.splitext(link_path)
                 link_path_name = arr_link_path[0]
                 if len(arr_link_path) > 1:
-                    extension = arr_link_path[1].replace('.', '')
+                    register_data.extension = arr_link_path[1].replace('.', '')
                 else:
-                    extension = ''
+                    register_data.extension = ''
                 where = 'WHERE name = %s '
                 contents_list = self.contents_dao.get_where_agreement(where, (link_path_name, ))
 
+                register_data.name = link_path
                 if contents_list is None:
                     print('nothing data [' + actress_name + ']   ' + link_path_name)
                     # 存在しない場合は、file_statusを'nothing data'にして、登録
-                    file_status = 'nothing data'
+                    register_data.fileStatus = 'nothing data'
+                    register_data.tag = actress_name
+                    register_data.name = link_path
+                    register_data.fileDate = contents_date
+                    register_data.remark = site_name
+                    self.contents_dao.export(register_data)
                 else:
-                    file_status = 'exist'
                     if len(contents_list) > 1:
-                        match_extension = list(filter(lambda one_contents: one_contents.extension.upper() == extension.upper(), contents_list))
+                        match_extension = list(filter(lambda one_contents:
+                                                      one_contents.extension.upper() == register_data.extension.upper()
+                                                      , contents_list))
                         if match_extension is not None and len(match_extension) == 1:
                             match_contents = match_extension[0]
                             row_ok = row_ok + 1
@@ -304,34 +287,20 @@ class MigrationContentsTables(mig_base.MigrationFromMssqlBase):
                         if len(match_contents.tag) > 0:
                             actress_name = match_contents.tag + ',' + actress_name
 
+                        register_data.tag = actress_name
+
                         if not is_exist_tag:
+                            register_data.id = match_contents.id
+                            self.contents_dao.update_tag(register_data)
                             print('tag change [' + match_contents.tag + '] -> [' + actress_name + ']  ' + link_path)
                             row_update = row_update + 1
                         else:
                             row_ok = row_ok + 1
+                    else:
+                        print('None match_contents ' + link_path)
+                        row_nazo = row_nazo + 1
 
             row = self.mssql_cursor.fetchone()
-
-            """
-            sql = 'INSERT INTO contents (store_label ' \
-                  '  , name, product_number, extension, tag ' \
-                  '  , publish_date, file_date, file_count, size ' \
-                  '  , rating, comment, remark, file_status ' \
-                  '  , created_at, updated_at) ' \
-                  ' VALUES(%s ' \
-                  ', %s, %s, %s, %s ' \
-                  ', %s, %s, %s, %s ' \
-                  ', %s, %s, %s, %s ' \
-                  ', %s, %s)'
-
-            self.mysql_cursor.execute(sql, (store_label
-                                            , name, p_number, extension, tag
-                                            , sell_date, file_date, 0, size
-                                            , rating, comment, remark, 0
-                                            , created_at, updated_at))
-
-            self.mysql_conn.commit()
-            """
 
             idx = idx + 1
 

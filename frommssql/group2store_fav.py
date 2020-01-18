@@ -52,6 +52,7 @@ class Group2StoreOrFav(mig_base.MigrationFromMssqlBase):
                 store.label = name
                 store.name1 = name
                 store.name2 = ''
+                store.type = 'file'
                 store.path = explanation
                 store.remark = ''
                 store.createdAt = created_at
@@ -71,6 +72,7 @@ class Group2StoreOrFav(mig_base.MigrationFromMssqlBase):
                 store.label = label + ' ' + name
                 store.name1 = label
                 store.name2 = name
+                store.type = 'site'
                 store.path = explanation
                 store.remark = ''
                 store.createdAt = created_at
@@ -95,6 +97,7 @@ class Group2StoreOrFav(mig_base.MigrationFromMssqlBase):
 
                 fav = data.FavData()
 
+                fav.label = fav_label
                 fav.name = fav_label
                 fav.type = 'actress'
                 fav.createdAt = created_at

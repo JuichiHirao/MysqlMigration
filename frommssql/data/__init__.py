@@ -37,6 +37,7 @@ class ContentsData:
 
     def __init__(self):
 
+        self.id = -1
         self.storeLabel = ''
         self.name = ''
         self.productNumber = ''
@@ -49,7 +50,7 @@ class ContentsData:
         self.rating = 0
         self.comment = ''
         self.remark = ''
-        self.isNotExist = 0
+        self.fileStatus = None
         self.createdAt = None
         self.updatedAt = None
 

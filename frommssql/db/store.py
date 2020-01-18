@@ -86,15 +86,18 @@ class StoreDao(mysql_base.MysqlBase):
     def export(self, data: data.StoreData = None):
 
         sql = 'INSERT INTO store (label ' \
-              ', name1, name2, path, remark ' \
+              ', name1, name2, type, path ' \
+              ', remark ' \
               ', created_at, updated_at) ' \
               ' VALUES(%s ' \
               ', %s, %s, %s, %s ' \
+              ', %s ' \
               ', %s, %s)'
 
         self.cursor.execute(sql, (data.label
-                                        , data.name1, data.name2, data.path, data.remark
-                                        , data.createdAt, data.updatedAt))
+                                  , data.name1, data.name2, data.type
+                                  , data.path, data.remark
+                                  , data.createdAt, data.updatedAt))
 
         self.conn.commit()
 
