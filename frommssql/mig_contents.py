@@ -14,15 +14,15 @@ class MigrationContentsTables(mig_base.MigrationFromMssqlBase):
         self.contents_dao = db.contents.ContentsDao()
         self.stores = self.store_dao.get_all()
 
-        # INSERT INTO MOVIE_GROUP (ID, NAME, LABEL, EXPLANATION, KIND, CREATE_DATE, UPDATE_DATE)
-        #   VALUES (818, 'DVDRip10-1', '', '\\TWELVE-SRV\DVDRIP-10\201703', 1, '2017-03-03 21:49:57.613', '2018-08-09 22:26:29.123');
-        # INSERT INTO MOVIE_FILES (ID, NAME, SIZE, FILE_DATE, RATING, LABEL, SELL_DATE, COMMENT, REMARK, PRODUCT_NUMBER, FILE_COUNT, EXTENSION, CREATE_DATE, UPDATE_DATE, TAG)
-        #   VALUES (82, '[シロウトTV] 初々131 SD るみ 20才 大学生 ◎', 466052875, '2010-11-07 16:21:06.280', 5, '\\twelve-srv\ContentsSeries\MGS - シロウトTV', null, null, null, '', 1, 'WMV', '2012-12-07 13:11:07.343', '2013-01-13 01:28:42.130', null);
-
     def store_check(self):
 
         label_list = []
-        self.mssql_cursor.execute('SELECT LABEL FROM MOVIE_FILES GROUP BY LABEL ')
+        self.mssql_cursor.execute('SELECT '
+                                  'コンテンツID, 詳細ID, 格納ID, ラベル, '
+                                  '名前, 入手元, 時間, 動画情報, '
+                                  '画質, 動画コメント, 更新日時, サイズ, '
+                                  '優先順位, 備考 '
+                                  'FROM ファイル ')
 
         row = self.mssql_cursor.fetchone()
 
@@ -32,7 +32,6 @@ class MigrationContentsTables(mig_base.MigrationFromMssqlBase):
 
         # self.mssql_conn.close()
         # self.mssql_cursor = self.mssql_conn.cursor()
-        '''
         self.mssql_cursor.execute('SELECT LABEL FROM MOVIE_SITECONTENTS GROUP BY LABEL ')
 
         row = self.mssql_cursor.fetchone()
@@ -40,7 +39,6 @@ class MigrationContentsTables(mig_base.MigrationFromMssqlBase):
         while row:
             label_list.append(row[0])
             row = self.mssql_cursor.fetchone()
-        '''
 
         self.mssql_conn.commit()
 
